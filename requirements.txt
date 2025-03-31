@@ -1,0 +1,10 @@
+pandas
+biopython
+torch
+transformers
+datasets
+esm
+openmm
+requests
+biotite
+
