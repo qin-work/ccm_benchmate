@@ -1,0 +1,6 @@
+*.gz
+*.ipynb
+*.json
+*.sif
+*.idea
+*.__pycache__
