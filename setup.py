@@ -9,5 +9,6 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     package_data={"": ["*.json"]},
+    scripts=["ccm_demo/scripts/run_mmseqs.sh"],
     include_package_data=True
 )

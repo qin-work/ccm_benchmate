@@ -5,3 +5,4 @@
 *.sif
 *.idea
 *.__pycache__
+ccm_demo/sequence/databases
