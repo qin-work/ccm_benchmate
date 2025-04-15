@@ -1,4 +1,4 @@
-#TODO openmm
+#TODO import
 
 class Simulation:
     def __init__(self, protein):
@@ -7,7 +7,8 @@ class Simulation:
     def cleanup(self):
         pass
 
-    def simulate(self, use_bioemu=True):
+    #TODO openmm with a warning
+    def simulate(self, use_bioemu=True, relax=False):
         pass
 
     def save(self):

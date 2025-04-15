@@ -28,6 +28,7 @@ class MoleculeBinder:
         :return: a list of coordinates that capture the aas specified
         """
         pass
+
     def generate_molecules(self, pocket, n):
         """
         this runs pocket2mol for a give pocket and generated n molecules. The pockets can be de
