@@ -30,7 +30,7 @@ class ContainerRunner:
         binds = []
         for mount in self.command_dict["bind_mounts"]:
             if not os.path.exists(mount["local"]):
-                raise FileNotFoundError(f"Bind mount {mount} not found")
+                raise NotADirectoryError(f"Bind mount {mount} not found")
             binds.append("-B {}:{}".format(os.path.abspath(mount["local"]), mount["target"]))
 
         singularity_args = " ".join(self.command_dict["singularity_args"])
@@ -62,7 +62,7 @@ class ContainerRunner:
 
         return self
 
-    def return_results(self, stdout=None, stderr=None):
+    def return_results(self):
         to_ret = []
         for results in [self.out, self.err]:
             if results is not None:

@@ -1,8 +1,8 @@
+# many thanks to @r-shadoff for writing most of this code
+
 import json
 import string
-
 from ccm_demo.containers.utils import *
-
 
 def generate_alpha_id(n):
     alpha_IDs = list(string.ascii_uppercase)
@@ -14,26 +14,39 @@ def generate_alpha_id(n):
                     return alpha_IDs
     return alpha_IDs[:n]
 
-#TODO needs to account for small molecules, DNA, RNA
-def generate_json(name, sequences, stoichiometry, fpath, seed=1, version=1):
+#TODO modifications
+def generate_json(name, sequences, types, stoichiometry, fpath, seed=1, version=1):
+    # to make it compatible with below
+    if isinstance(stoichiometry, int):
+        stoichiometry = [stoichiometry]
+
+    if isinstance(types, str):
+        types = [types]
+
+    if isinstance(sequences, str):
+        sequences = [sequences]
+
     total_chains = sum(map(int, stoichiometry))
     alpha_IDs = generate_alpha_id(total_chains)
 
     dialect = "alphafold3"
-    version = version
     if len(sequences) != len(stoichiometry):
         raise ValueError("sequences and stoichiometry must have same length")
+    for item_type in types:
+        if item_type not in ["protein", "ligand", "dna", "rna"]:
+            raise ValueError("type must be one of 'protein', 'ligand', 'dna', 'rna'")
 
     protein_sequences = []
     alpha_index = 0
 
-    for seq, stoich in zip(sequences, stoichiometry):
+    for seq, item_type, stoich in zip(sequences, types, stoichiometry):
         ids = alpha_IDs[alpha_index:alpha_index + stoich]
         id_value = ids[0] if len(ids) == 1 else ids  # Convert to string if one item
-        protein_sequences.append({"protein": {"id": id_value, "sequence": seq}})
+        protein_sequences.append({item_type: {"id": id_value, "sequence": seq}})
         alpha_index += stoich
 
-    json_file = {"name": name, "modelSeeds": [412], "sequences": protein_sequences, "dialect": dialect, "version": 1}
+    json_file = {"name": name, "modelSeeds": [412], "sequences": protein_sequences,
+                 "dialect": dialect, "version": version}
     file_name = f"{name}.json"
     json_path = os.path.abspath(os.path.join(fpath, file_name))
     with open(json_path, "w") as f:

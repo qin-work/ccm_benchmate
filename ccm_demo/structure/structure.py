@@ -85,7 +85,7 @@ class Structure:
     def predict(self, output_path, container, inference=True, pipeline=False, model="AF3"):
         if model != "AF3":
             raise NotImplementedError("We can only predict structures with AF3")
-        generate_json(self.name, self.sequence, stoichiometry=1, fpath=output_path)
+        generate_json(self.name, "protein", self.sequence, stoichiometry=1, fpath=output_path)
         os.makedirs(os.path.abspath(os.path.join(output_path, "af3_prediction")), exist_ok=True)
         command_dict["run_command"].format(pipeline, inference)
         command_dict["bind_mounts"][1] = os.path.abspath(output_path)
