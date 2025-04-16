@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup as bs
 import requests
+import tarfile
 
 from ccm_demo.literature.utils import *
 
@@ -7,15 +8,13 @@ class NoPapersError(Exception):
     pass
 
 class LitSearch:
-    def __init__(self, pubmed_url, arxiv_url, pubmed_api_key):
+    def __init__(self, pubmed_api_key=None):
         """
         create the ncessary framework for searching
         :param pubmed_url:
         :param arxiv_url:
         :param pubmed_api_key:
         """
-        self.pubmed_url = pubmed_url
-        self.arxiv_url = arxiv_url
         self.pubmed_key = pubmed_api_key
 
     #TODO advanced search
@@ -45,9 +44,9 @@ class LitSearch:
                     response.raise_for_status()
                     soup = bs(response.text, "xml")
                     dois.append([item.text for item in soup.find_all("ArticleId") if item.attrs["IdType"] == "doi"])
-                return dois
+                to_ret=dois
             else:
-                return ids
+                to_ret=ids
 
         elif database == "arxiv":
             search_url="http://export.arxiv.org/api/search_query?{}&max_results={}".format(query, str(max_results))
@@ -55,8 +54,8 @@ class LitSearch:
             search_response.raise_for_status()
             soup = bs(search_response.text, "xml")
             ids=[item.text.split("/").pop() for item in soup.find_all("id")][1:] #first one is the search id
-            return ids
-
+            to_ret= ids
+        return to_ret
 
 class Paper:
     def __init__(self, id):

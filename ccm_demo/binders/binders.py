@@ -12,6 +12,8 @@ from ccm_demo.binders.utils import *
 from ccm_demo.containers.utils import *
 from ccm_demo.containers.pocket2mol.command import *
 
+from usearch_molecules.dataset import FingerprintedDataset, shape_ecfp4, shape_fcfp4, shape_maccs
+
 
 class MoleculeBinder:
     def __init__(self, pdb):
@@ -43,7 +45,7 @@ class MoleculeBinder:
             pocket_coords=[get_pocket_dimensions(item) for item in pocket_list]
             return pocket_list, pocket_properties, pocket_coords
 
-
+    #TODO implement fixed from KOBE
     def get_coord_cuboid(pdb_file, amino_acids=None, use_alpha_carbon=False):
 
         """
@@ -98,7 +100,7 @@ class MoleculeBinder:
         :param n:
         :return:
         """
-        yaml=generate_yaml(fpath, config=config, numsamples=numsamples, max_steps=max_steps)
+        generate_yaml(fpath, config=config, numsamples=numsamples, max_steps=max_steps)
         command_dict["bind_mounts"][0]["local"] = os.path.abspath("../containers/pocket2mol/Pocket2Mol")
         command_dict["bind_mounts"][1]["local"]=os.path.abspath(fpath)
         command_dict["bind_mounts"][2]["local"] = os.path.abspath(outdir)
@@ -112,7 +114,7 @@ class MoleculeBinder:
         return runner
 
 
-    def search_molecules(self, library, using="ecfp4", metric="tanimoto", n=100):
+    def search_molecules(self, smiles, library, using="ecfp4", metric="tanimoto", n=100):
         """
         using useard molecules will search library for a given metric, the only metric implemented is tanimoto similarity
         :param library: a list of directories that contain usearch parquet files
@@ -126,6 +128,17 @@ class MoleculeBinder:
 
         if using not in ["ecfp4", "fcfp4", "maccs"]:
             raise NotImplementedError("method must be ecfp4 or fcfp4 or maccs")
+        elif using=="ecfp4":
+            shape=shape_ecfp4
+        elif using=="fcfp4":
+            shape=shape_ecfp4
+        elif using=="maccs":
+            shape=shape_maccs
+
+        data=FingerprintedDataset(library, shape=shape)
+        results=data.search(smiles=smiles, n)
+        return results
+
 
 
 

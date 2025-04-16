@@ -1,5 +1,6 @@
 #TODO import
 
+#TODO need to specify localcolabfold directory in the container bind mounts
 class Simulation:
     def __init__(self, protein):
         self.protein = protein
