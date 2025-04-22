@@ -66,3 +66,8 @@ class Sequence:
     def __str__(self):
         return "Sequence with name {} and {} aas".format(self.name, len(self.sequence))
 
+#TODO think of methods
+class SequenceList(Sequence):
+    def __init__(self):
+        super().__init__()
+        pass

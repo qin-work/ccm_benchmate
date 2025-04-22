@@ -1,3 +1,5 @@
+import os.path
+
 from bs4 import BeautifulSoup as bs
 import requests
 import tarfile
@@ -17,7 +19,7 @@ class LitSearch:
         """
         self.pubmed_key = pubmed_api_key
 
-    #TODO advanced search
+    #TODO advanced search, while technically supported because query is just a string it would be nice if it was explicit
     def search(self, query, database="pubmed", results="id", max_results=1000):
         """
         search pubmed and arxiv for a query, this is just keyword search no other params are implemented at the moment
@@ -59,6 +61,10 @@ class LitSearch:
 
 class Paper:
     def __init__(self, id):
+        self.source = None
+        self.download_link = None
+        self.table_interpretation = None
+        self.figure_interpretation = None
         self.id = id
         self.title = None
         self.abstract = None
@@ -104,18 +110,23 @@ class Paper:
             download.raise_for_status()
             with open("{}/{}.tar.gz".format(destination, self.id), "wb") as f:
                 f.write(download.content)
-            #TODO extract pdf and cleanup
+            file_paths=extract_pdfs_from_tar(destination, destination)
         elif self.source == "arxiv":
             download = requests.get(self.download_link, stream=True)
             download.raise_for_status()
             with open("{}/{}.pdf".format(destination, self.id), "wb") as f:
                 f.write(download.content)
+            file_paths=os.path.join("{}/{}.pdf".format(destination, self.id))
+        return file_paths
 
     def process(self, pdf):
-        text, figures, captions= process_pdf(pdf)
-        text=[cleanup_text(item) for item in text]
-        self.text=text
+        article_text, figures, tables, figure_interpretation, table_interpretation = process_pdf(pdf)
+        self.text=article_text
         self.figures=figures
+        self.tables=tables
+        self.figure_interpretation=figure_interpretation
+        self.table_interpretation=table_interpretation
+        return self
 
 
 

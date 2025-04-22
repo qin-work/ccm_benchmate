@@ -25,8 +25,10 @@ class KnowledgeBase:
     def question(self, question):
         pass
 
-    def RAG(self, query):
+    def RAG(self, query, gen_model, **kwargs):
         pass
 
     #def chat not sure, depends on the overall model
 
+
+#TODO try some large-ish models for chatting with the data

@@ -1,51 +1,49 @@
 import os
 import copy
+import tarfile
 
 from PIL import Image
 import pytesseract
 import layoutparser as lp
-from layoutparser.models import Detectron2LayoutModel, detectron2
-
-import requests
 
 import pymupdf
-from pyarrow.lib import table_to_blocks
-
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
+from chonkie import SemanticChunker
 
-config=os.path.abspath(os.path.join(os.path.dirname(__file__),"models/config.yaml"))
-model=os.path.abspath(os.path.join(os.path.dirname(__file__),"models/model_final.pth"))
+from ccm_demo.literature.configs import *
 
-#TODO this needs to into a config for initiation
-lp_model = lp.Detectron2LayoutModel(config, model,
-                                    label_map={0: "Text", 1: "Title", 2: "List", 3: "Table", 4: "Figure"},
-                                 extra_config=["MODEL.ROI_HEADS.SCORE_THRESH_TEST", 0.8],
-                                 )
-
-vl_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-    "Qwen/Qwen2.5-VL-7B-Instruct", torch_dtype="auto", device_map="auto", cache_dir="models",
-)
-
-processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
-
+def interpret_image(image, prompt, processor, model, max_tokens, device):
+    prompt[1]["content"][0]["image"] = image
+    text = processor.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
+    # this is here for compatibility I will not be processing videos
+    image_inputs, video_inputs = process_vision_info(prompt)
+    inputs = processor(
+        text=[text],
+        images=image_inputs,
+        videos=video_inputs,
+        padding=True,
+        return_tensors="pt",
+    )
+    inputs = inputs.to(device)
+    generated_ids = model.generate(**inputs, max_new_tokens=max_tokens)
+    generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids,
+    out_ids in zip(inputs.input_ids, generated_ids)]
+    output_text = processor.batch_decode(
+        generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+    return output_text
 
 #TODO add tables test a paper with wester/northern blots
 #TODO alternate method to include paper abstract
-def process_pdf(pdf, lp_model=lp_model, vl_model=vl_model, processor=processor, zoomx=2, device="cuda", max_tokens=400):
-    figure_messages = [{"role": "system", "content": [{"type": "text",
-                                                       "text": """You are an expert biologist who is responsible for reading and interpreting scientific figures. For a given figure from a scientific paper
-         interpret the figure. Do not provide comments on whether the figure is well done or not. Do not provide extra text on describing that you are looking at figure from a scientific figure. 
-         Whenever possible very briefly describe each sections of the figure and then give an overall conclusion about what the figure tells us. 
-         """}]},
-                       {"role": "user", "content": [{"type": "image", "image": None, }], }]
+def process_pdf(pdf, lp_model=paper_processing_config["lp_model"], interpret_figures=True, interpret_tables=True,
+                vl_model=paper_processing_config["vl_model"], zoomx=2, device="cuda", max_tokens=400, figure_prompt=figure_messages,
+                table_prompt=table_message):
 
-    table_message = [{"role": "system", "content": [{"type": "text",
-                                                       "text": """You are an expert biologist who is responsible for reading and interpreting scientific tables. For a given table from a scientific paper
-             interpret the table. Do not provide comments on whether the table is well done or not. Do not provide extra text on describing that you are looking at table from a scientific publication. 
-             Give an overall conclusion about what the tables tells us. 
-             """}]},
-                       {"role": "user", "content": [{"type": "image", "image": None, }], }]
+
+    lp_model=lp.Detectron2LayoutModel(lp_model["config"], lp_model["model"],
+                             label_map={0: "Text", 1: "Title", 2: "List", 3: "Table", 4: "Figure"},
+                             extra_config=["MODEL.ROI_HEADS.SCORE_THRESH_TEST", 0.8],
+                             )
 
     doc = pymupdf.open(pdf)
     zoom_x = zoomx  # horizontal zoom
@@ -72,77 +70,94 @@ def process_pdf(pdf, lp_model=lp_model, vl_model=vl_model, processor=processor, 
                 coords = block.block
                 coords = (coords.x_1, coords.y_1, coords.x_2, coords.y_2,)
                 table_img = pix.crop(coords)
-                tables.append(figure_img)
+                tables.append(table_img)
 
         page_text = pytesseract.image_to_string(pix)
         texts.append(page_text)
     article_text = "\n".join(texts)
 
-    figure_interpretation = []
-    for figure in figures:
-        figure_messages[1]["content"][0]["image"] = figure
-        text = processor.apply_chat_template(figure_messages, tokenize=False, add_generation_prompt=True)
-        # this is here for compatibility I will not be processing videos
-        image_inputs, video_inputs = process_vision_info(figure_messages)
-        inputs = processor(
-            text=[text],
-            images=image_inputs,
-            videos=video_inputs,
-            padding=True,
-            return_tensors="pt",
+    if interpret_figures or interpret_tables:
+        vl_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            vl_model, torch_dtype="auto", device_map="auto", cache_dir="models",
         )
-        inputs = inputs.to(device)
-        generated_ids = vl_model.generate(**inputs, max_new_tokens=max_tokens)
-        generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids,
-        out_ids in zip(inputs.input_ids, generated_ids)]
-        output_text = processor.batch_decode(
-            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-        figure_interpretation.append(output_text)
+        processor = AutoProcessor.from_pretrained(vl_model)
+
+    figure_interpretation = []
+    if interpret_figures:
+        for figure in figures:
+            figure_interpretation.append(interpret_image(figure, figure_prompt, processor, lp_model, max_tokens, device,))
 
     table_interpretation = []
-    for table in tables:
-        table_message[1]["content"][0]["image"] = table
-        text = processor.apply_chat_template(table_message, tokenize=False, add_generation_prompt=True)
-        # this is here for compatibility I will not be processing videos
-        image_inputs, video_inputs = process_vision_info(table_message)
-        inputs = processor(
-            text=[text],
-            images=image_inputs,
-            videos=video_inputs,
-            padding=True,
-            return_tensors="pt",
+    if interpret_tables:
+        for table in tables:
+            table_interpretation.append(interpret_image(table, table_prompt, processor, lp_model, max_tokens, device,))
+
+    return article_text, figures, tables, figure_interpretation, table_interpretation
+
+
+#TODO image embedding model, same function for figures and tables
+def embed_images(image, model):
+    pass
+
+
+# same model for article text and captions
+def embed_text(text, embedding_model, splitting_strategy="semantic",
+               params=paper_processing_config["chunking"]):
+
+    if splitting_strategy == "semantic":
+        chunker = SemanticChunker(
+            embedding_model=params["model"],
+            threshold=params["threshold"],  # Similarity threshold (0-1) or (1-100) or "auto"
+            chunk_size=params["chunk_size"],  # Maximum tokens per chunk
+            min_sentences=params["min_sentences"],  # Initial sentences per chunk,
+            return_type=params["return_type"]  # return a list of strings
         )
-        inputs = inputs.to(device)
-        generated_ids = vl_model.generate(**inputs, max_new_tokens=max_tokens)
-        generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids,
-        out_ids in zip(inputs.input_ids, generated_ids)]
-        output_text = processor.batch_decode(
-            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-        table_interpretation.append(output_text)
+        chunks = chunker.chunk(text)
+    elif splitting_strategy == "none":
+        chunks=[text]
+    else:
+        raise NotImplementedError("Semantic splitting and none are the only implemented methods.")
 
-    return article_text, figures, figure_interpretation, table_interpretation
+    for chunk in chunks:
+        #TODO embed
+        pass
 
-def cleanup_text(page_text):
-    page_split=page_text.split("\n\n")
-    sections=[]
-    for section in page_split:
-        cleaned=[]
-        lines=section.split("\n")
-        for line in lines:
-            if len(line) < 50 :
-                continue
-            else:
-                cleaned.append(line)
-        sections.append("\n".join(cleaned))
-    sections=[item for item in sections if len(item)>0]
-    sections="\n\n".join(sections)
-    return sections
 
-#TODO image embedding model
-def embed_images(figures, model):
-    pass
+def extract_pdfs_from_tar(file, destination):
+    """Lists the contents of a .tar.gz file.
+    Args:
+        file_path: The path to the .tar.gz file.
+    """
+    if not os.path.exists(destination):
+        raise FileNotFoundError("{} does not exist.".format(destination))
 
-#TODO text embeddign model
-def embed_text(text, splitting_strategy, model):
-    pass
+    try:
+        if file.endswith(".tar.gz"):
+            read_str="r:gz"
+        elif file.endswith(".tar.bz2"):
+            read_str="r:bz2"
+        elif file.endswith(".zip"):
+            read_str="r:zip"
+        else:
+            read_str="r"
+
+        pdfs=[]
+        with tarfile.open(file, read_str) as tar:
+            for member in tar.getmembers():
+                pdfs.append(member.name)
+        paths=[]
+        for pdf in pdfs:
+            tar.extract(pdf, destination)
+            paths.append(os.path.abspath(os.path.join(destination, pdf)))
+
+        return paths
+
+    except FileNotFoundError:
+        print(f"Error: File not found: {file}")
+        return None
+
+    except tarfile.ReadError:
+        print(f"Error: Could not open or read {file}. It might be corrupted or not a valid tar.gz file.")
+        return None
+
 
