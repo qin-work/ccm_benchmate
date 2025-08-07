@@ -3,8 +3,8 @@ from sqlalchemy import Column, Integer, String, Float, JSON
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.dialects.postgresql import ARRAY
 
-from ccm_benchmate.knowledge_base.tables import Base
-
+from sqlalchemy.orm import declarative_base
+Base = declarative_base()
 
 class BaseVariant:
     """Abstract base class for all variant types."""
