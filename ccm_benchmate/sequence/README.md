@@ -1,3 +1,7 @@
+---
+layout: default
+title: Sequence
+---
 
 # Sequence Module
 

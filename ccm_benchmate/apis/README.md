@@ -1,4 +1,10 @@
-from PIL.features import featuresfrom PIL.features import featuresfrom sympy.physics.units.definitions.dimension_definitions import information
+---
+layout: default
+title: API
+---
+
+from PIL.features import featuresfrom PIL.features import featuresfrom 
+sympy.physics.units.definitions.dimension_definitions import information
 
 # API's module
 

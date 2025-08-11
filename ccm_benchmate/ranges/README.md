@@ -1,3 +1,7 @@
+---
+layout: default
+title: Ranges
+---
 
 # Ranges and GenomicRanges Module
 
