@@ -1,3 +1,8 @@
+---
+layout: default
+title: Variant
+---
+
 # Variant Module
 
 This module defines classes for representing and annotating different types of genetic variants, including SNVs, indels, structural variants, and tandem repeats.
