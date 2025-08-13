@@ -45,16 +45,16 @@ each module.
 ## 🎨 Modules Overview
 
 Explore the main components (click for details):
-- [APIs](API/): Unified interfaces for biological databases
-- [Literature](Literature/): Advanced literature search and processing
-- [Container Runner](ContainerRunner/): Manage and run containers
-- [Databases](Databases/): (In development) Local and community-curated resources
-- [Genome](Genome/): Genomic data structures and queries
-- [Sequence](Sequence/): Sequence handling and analysis
-- [Structure](Structure/): Structure loading, prediction, and analysis
-- [Variant](Variant/): Variant representation and processing
-- [Ranges](Ranges/): Generic and genomic intervals
-- [Knowledge Base](KnowledgeBase/): Store and search for your results (coming soon)
+- [APIs](ccm_benchmate/apis/): Unified interfaces for biological databases
+- [Literature](ccm_benchmate/literature/): Advanced literature search and processing
+- [Container Runner](ccm_benchmate/container_runner/): Manage and run containers
+- [Databases](ccm_benchmate/databases/): (In development) Local and community-curated resources
+- [Genome](ccm_benchmate/genome/): Genomic data structures and queries
+- [Sequence](ccm_benchmate/sequence/): Sequence handling and analysis
+- [Structure](ccm_benchmate/structure/): Structure loading, prediction, and analysis
+- [Variant](ccm_benchmate/variant/): Variant representation and processing
+- [Ranges](ccm_benchmate/ranges/): Generic and genomic intervals
+- [Knowledge Base](ccm_benchmate/knowledge_base/): Store and search for your results (coming soon)
 
 ## 💡 Roadmap
 
