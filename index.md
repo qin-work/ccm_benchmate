@@ -45,16 +45,16 @@ each module.
 ## 🎨 Modules Overview
 
 Explore the main components (click for details):
-- APIs: Unified interfaces for biological databases
-- Literature: Advanced literature search and processing
-- Container Runner: Manage and run containers
-- Databases: (In development) Local and community-curated resources
-- Genome: Genomic data structures and queries
-- Sequence: Sequence handling and analysis
-- Structure: Structure loading, prediction, and analysis
-- Variant: Variant representation and processing
-- Ranges: Generic and genomic intervals
-- Knowledge Base: Store and search for your results (coming soon)
+- **APIs**: Unified interfaces for biological databases
+- **Literature**: Advanced literature search and processing
+- **Container Runner**: Manage and run containers
+- **Databases**: (In development) Local and community-curated resources
+- **Genome**: Genomic data structures and queries
+- **Sequence**: Sequence handling and analysis
+- **Structure**: Structure loading, prediction, and analysis
+- **Variant**: Variant representation and processing
+- **Ranges**: Generic and genomic intervals
+- **Knowledge Base**: Store and search for your results (coming soon)
 
 ## 💡 Roadmap
 
