@@ -1,3 +1,8 @@
+---
+layout: default
+title: Installation
+---
+
 <div style="text-align: center;">
     <img src="./assets/installation.png" width="900" alt="CCM Benchmate logo" class="center">
 </div>
